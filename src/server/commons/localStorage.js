@@ -10,6 +10,10 @@ export const store = {
 
     get:(key) => {
         localStorage.getItem(key)
+    },
+
+    remove:(key) => {
+        localStorage.removeItem(key)
     }
 };
 

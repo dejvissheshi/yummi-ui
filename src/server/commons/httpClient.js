@@ -3,7 +3,7 @@ import axios from 'axios';
 class HttpClient {
 
     getHeaders() {}
-    apiEndpoint;
+    apiEndpoint="https://yummi-service.herokuapp.com";
 
     getAxiosInstance() {
         return axios.create({
@@ -17,7 +17,7 @@ class HttpClient {
             this.getAxiosInstance()
                 .get(url, {params})
                 .then(response => {
-                    resolve(response.data);
+                    resolve(response.data.data);
                 })
                 .catch(err => {
                     reject(err.response);

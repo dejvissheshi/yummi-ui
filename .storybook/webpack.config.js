@@ -23,7 +23,7 @@ module.exports = {
                         }
                     }
                 ],
-                include: path.resolve(__dirname, "../")
+                include: path.resolve(__dirname, "/src")
             },
             {
                 test: /\.svg$/,
@@ -32,7 +32,8 @@ module.exports = {
         ],
         resolve:{
             alias:{
-                Images: path.relative(__dirname,'src/assets/images')
+                Images: path.relative(__dirname,'/src/assets/images'),
+                Server: path.relative(__dirname,'../server')
             }
         }
     }
