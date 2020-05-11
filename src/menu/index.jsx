@@ -6,8 +6,35 @@ import ItemCard from "./itemCard/ItemCard";
 import getProductsForMenu, {PriceType, ProductType} from "../server/menu/getProductsForMenu";
 import {queryRequest} from "../server/commons/requestUtils";
 import ProductContext, {OrderListContext} from "./menuContext";
+import CarOutlined from "@ant-design/icons/lib/icons/CarOutlined";
 const {Content, Sider}=Layout;
 export const MENU_PATH = "/menu";
+
+const MockDataForCard = [
+    {"id":14,
+        "product_name":"Capricciosa",
+        "product_type":"pizza",
+        "price":4,
+        "description":null,
+        "quantity": 4,
+        "photo":"https:\/\/firebasestorage.googleapis.com\/v0\/b\/the-yummi-pizza-d5905.appspot.com\/o\/capricciosa-pizza.jpg?alt=media&token=216df53f-f6ce-4593-9a56-881c535e895c"
+    },
+    {"id":15,
+        "product_name":"Chicken & Mushroom",
+        "product_type":"pizza",
+        "price":4,
+        "quantity": 4,
+        "description":null,
+        "photo":"https:\/\/firebasestorage.googleapis.com\/v0\/b\/the-yummi-pizza-d5905.appspot.com\/o\/capricciosa-pizza.jpg?alt=media&token=216df53f-f6ce-4593-9a56-881c535e895c"},
+    {
+        "id":16,
+        "product_name":"Diavola",
+        "product_type":"pizza",
+        "price_euro":4,
+        "quantity": 3,
+        "description":null,
+        "photo":"https:\/\/firebasestorage.googleapis.com\/v0\/b\/the-yummi-pizza-d5905.appspot.com\/o\/capricciosa-pizza.jpg?alt=media&token=216df53f-f6ce-4593-9a56-881c535e895c"
+}];
 
 const GeneralMenu = () => {
     const [products, setProducts] = useState([]);
@@ -16,6 +43,11 @@ const GeneralMenu = () => {
     const [orderStates, setOrderStates] = useState([]);
     const [orderList, setOrderList] = useState([]);
     const [checkout, setCheckout] = useState(false);
+    const [checkoutData, setCheckoutData] = useState({
+        total: 0,
+        transport:0,
+        products: MockDataForCard
+    });
 
     const fetchData = async () => {
         const result = await queryRequest(() => getProductsForMenu(productType, priceType));
@@ -132,6 +164,51 @@ const GeneralMenu = () => {
         </div>
     );
 
+    const listProductInCheckout = () => {
+        let data = [];
+        data = checkoutData.products;
+        return (
+            <div>
+                {
+                    data.map(({photo, product_name, quantity})=>{
+                        return <div style={{display:"flex", margin:"16px 24px", background:"white", borderRadius:5, paddingLeft:15}}>
+                            <div>
+                                <img style={{width:100, borderRadius:5}} src={photo} alt=""/>
+                            </div>
+                            <div style={{margin:"30px 16px", fontSize:"20px"}}>
+                                <h4>{product_name}</h4>
+                            </div>
+                            <div style={{margin:"30px 16px", fontSize:"20px"}}>
+                              <h4>x {quantity}</h4>
+                            </div>
+                        </div>
+                    })
+                }
+            </div>
+        )
+    };
+
+    const cartComponent = () => (
+        <div style={{margin:"16px 24px", width:"50%", borderRight:"1px solid #505050"}}>
+            <div>
+                <div>
+                    {listProductInCheckout()}
+                </div>
+            </div>
+            <div style={{display:"flex"}}>
+                <h4 style={{margin:"16px 48px", fontSize:20}}>
+                    {priceType === PriceType.EURO ? `Transport Cost: ${checkoutData.transport} €`
+                        : `Transport Cost: $ ${checkoutData.transport}`}
+                </h4>
+                <CarOutlined style={{fontSize:30, marginTop:"1%"}} />
+            </div>
+            <h3 style={{margin:"16px 48px", fontSize:24}}>
+                {priceType === PriceType.EURO ? `Total: ${checkoutData.total} €`
+                    : `Total: $ ${checkoutData.total}`}
+            </h3>
+        </div>
+    );
+
     return (
         <ProductContext.Provider value={products}>
             <OrderListContext.Provider
@@ -169,7 +246,7 @@ const GeneralMenu = () => {
                                     <Menu.Item key="3">Drinks</Menu.Item>
                                 </Menu>
                             </Sider>
-                            <div style={{display: "flex", flexDirection: "column", width:"100%"}}>
+                            <div style={{display: "flex", flexDirection: "column", width:"100%", background:"white"}}>
                                 <div style={{display:"flex", justifyContent:"space-between"}}>
                                     <div>
                                         <Col>
@@ -188,13 +265,13 @@ const GeneralMenu = () => {
                                         !checkout ? <Button style={{width:100, height:35, textAlign:"center", margin:"16px 24px"}} disabled={orderList.length === 0}
                                             onClick={()=>goToCheckout()}>Order</Button>
                                             :
-                                            <Button style={{width:150, height:35, textAlign:"center", margin:"16px 24px"}} disabled={orderList.length === 0}
+                                            <Button style={{width:150, height:35, textAlign:"center", margin:"16px 24px"}}
                                                     onClick={()=>goToMenu()}>Back To Menu</Button>
                                         }
                                     </div>
                                 </div>
                                 <div>
-                                    {!checkout ? menuComponent() : null}
+                                    {!checkout ? menuComponent() : cartComponent()}
                                 </div>
                             </div>
                         </Layout>
