@@ -1,79 +1,13 @@
 import React, {useEffect, useState} from "react";
-import {Col, Layout, Menu, notification, Row, Button, Radio } from 'antd';
+import {Button, Col, Layout, Menu, notification, Radio} from 'antd';
 import CustomFooter from "../common/custom/CustomFooter";
 import CustomHeader from "../common/custom/CustomHeader";
 import ItemCard from "./itemCard/ItemCard";
 import getProductsForMenu, {PriceType, ProductType} from "../server/menu/getProductsForMenu";
 import {queryRequest} from "../server/commons/requestUtils";
-import {store} from "../server/commons/localStorage";
-
+import ProductContext, {OrderListContext} from "./menuContext";
 const {Content, Sider}=Layout;
-
 export const MENU_PATH = "/menu";
-
-const MockData = [
-    {
-        "id":14,
-        "product_name":"Capricciosa",
-        "product_type":"pizza",
-        "price_euro":4,
-        "description":null,
-        "photo":"https:\/\/firebasestorage.googleapis.com\/v0\/b\/the-yummi-pizza-d5905.appspot.com\/o\/capricciosa-pizza.jpg?alt=media&token=216df53f-f6ce-4593-9a56-881c535e895c"},
-    {
-        "id":15,
-        "product_name":"Chicken & Mushroom",
-        "product_type":"pizza",
-        "price_euro":4,
-        "description":null,
-        "photo":"https:\/\/firebasestorage.googleapis.com\/v0\/b\/the-yummi-pizza-d5905.appspot.com\/o\/capricciosa-pizza.jpg?alt=media&token=216df53f-f6ce-4593-9a56-881c535e895c"
-    },
-    {
-        "id":16,
-        "product_name":"Capricciosa",
-        "product_type":"pizza",
-        "price_euro":4,
-        "description":null,
-        "photo":"https:\/\/firebasestorage.googleapis.com\/v0\/b\/the-yummi-pizza-d5905.appspot.com\/o\/capricciosa-pizza.jpg?alt=media&token=216df53f-f6ce-4593-9a56-881c535e895c"},
-    {
-        "id":17,
-        "product_name":"Chicken & Mushroom",
-        "product_type":"pizza",
-        "price_euro":4,
-        "description":null,
-        "photo":"https:\/\/firebasestorage.googleapis.com\/v0\/b\/the-yummi-pizza-d5905.appspot.com\/o\/capricciosa-pizza.jpg?alt=media&token=216df53f-f6ce-4593-9a56-881c535e895c"
-    },
-    {
-        "id":18,
-        "product_name":"Capricciosa",
-        "product_type":"pizza",
-        "price_euro":4,
-        "description":null,
-        "photo":"https:\/\/firebasestorage.googleapis.com\/v0\/b\/the-yummi-pizza-d5905.appspot.com\/o\/capricciosa-pizza.jpg?alt=media&token=216df53f-f6ce-4593-9a56-881c535e895c"},
-    {
-        "id":19,
-        "product_name":"Chicken & Mushroom",
-        "product_type":"pizza",
-        "price_euro":4,
-        "description":null,
-        "photo":"https:\/\/firebasestorage.googleapis.com\/v0\/b\/the-yummi-pizza-d5905.appspot.com\/o\/capricciosa-pizza.jpg?alt=media&token=216df53f-f6ce-4593-9a56-881c535e895c"
-    },
-    {
-        "id":20,
-        "product_name":"Capricciosa",
-        "product_type":"pizza",
-        "price_euro":4,
-        "description":null,
-        "photo":"https:\/\/firebasestorage.googleapis.com\/v0\/b\/the-yummi-pizza-d5905.appspot.com\/o\/capricciosa-pizza.jpg?alt=media&token=216df53f-f6ce-4593-9a56-881c535e895c"},
-    {
-        "id":21,
-        "product_name":"Chicken & Mushroom",
-        "product_type":"pizza",
-        "price_euro":4,
-        "description":null,
-        "photo":"https:\/\/firebasestorage.googleapis.com\/v0\/b\/the-yummi-pizza-d5905.appspot.com\/o\/capricciosa-pizza.jpg?alt=media&token=216df53f-f6ce-4593-9a56-881c535e895c"
-    }
-];
-
 
 const GeneralMenu = () => {
     const [products, setProducts] = useState([]);
@@ -81,153 +15,194 @@ const GeneralMenu = () => {
     const [productType, setProductType] = useState(null);
     const [orderStates, setOrderStates] = useState([]);
     const [orderList, setOrderList] = useState([]);
+    const [checkout, setCheckout] = useState(false);
 
     const fetchData = async () => {
-        const result = await queryRequest(()=>getProductsForMenu(productType,priceType));
-        console.log(result);
-        // if (!result.errors) {
-        //     setProducts(result);
-        // } else {
-        //     notification.open({
-        //         type: "error",
-        //         message: result.errors[0].message
-        //     });
-        // }
-    };
-
-    const addQuantityProperty = () => {
-        MockData.forEach((el)=>{
-           el["quantity"] = 0;
-            setProducts(products => [...products, el])
+        const result = await queryRequest(() => getProductsForMenu(productType, priceType));
+        let data = result.products;
+        setProducts([...data]);
+        setOrderStates([]);
+        data.forEach(({id, product_name, photo, price_euro, price_dollar}, index) => {
+            let price = priceType === PriceType.EURO ? price_euro : price_dollar;
+            setOrderStates(orderStates => [...orderStates, {id, price, product_name, photo, quantity: 0}])
         });
-    };
 
-    useEffect(()=>{
-         addQuantityProperty()
-    },[]);
-
-    useEffect(()=> {
-        fetchData()
-    },[priceType, productType]);
-
-    const defineOrderList = (prodId, productName) => {
-        debugger;
-        let currentOrderList = [...orderStates];
-        let doesProductExist = false;
-        if (currentOrderList.length > 0){
-            for(let i = 0; i < currentOrderList.length; i++){
-                if (currentOrderList[i].id === prodId){
-                    currentOrderList[i].quantity++;
-                    doesProductExist = true;
-                    break;
-                }
-            }
-            if (!doesProductExist){
-                currentOrderList.push({
-                        id:prodId,
-                        product_name: productName,
-                        quantity:1,
-                    })
-            }
-        }else{
-            currentOrderList = [{
-                id:prodId,
-                product_name: productName,
-                quantity:1,
-            }]
+        if (!result.errors) {
+            setProducts(result);
+        } else {
+            notification.open({
+                type: "error",
+                message: result.errors[0].message
+            });
         }
-
-        return currentOrderList;
     };
 
-    const addToCard = (prodId, productName) => {
-        let newOrderList = defineOrderList(prodId, productName);
-        newOrderList.forEach((order)=>{
-            setOrderStates([...products, order])
+    useEffect(() => {
+        fetchData();
+    }, [priceType, productType]);
+
+    const addToCard = (prodId) => {
+        let newData = orderStates.map(({id, quantity, photo, product_name, price}) => {
+            let newQuantity = quantity;
+            if (id === prodId) {
+                newQuantity++
+            }
+            return {
+                id,
+                quantity: newQuantity,
+                photo,
+                product_name,
+                price
+            }
         });
 
-        setOrderList([...orderList, {id:prodId, productName}])
+        let newList = [];
+          newData.forEach(({id, quantity})=>{
+              if (quantity > 0){
+                  newList.push({id, quantity})
+              }
+        });
+
+        setOrderStates([...newData]);
+        setOrderList([...newList]);
     };
 
-    const changePriceType = (e) =>{
+    const removeFromCard = (prodId) => {
+        let newData = orderStates.map(({id, quantity, photo, product_name, price}) => {
+            let newQuantity = quantity;
+            if (id === prodId) {
+                newQuantity--
+            }
+            return {
+                id,
+                quantity: newQuantity,
+                photo,
+                product_name,
+                price
+            }
+        });
+
+        let newList = [];
+        newData.forEach(({id, quantity})=>{
+            if (quantity > 0){
+                newList.push({id, quantity})
+            }
+        });
+
+        setOrderStates([...newData]);
+        setOrderList([...newList]);
+    };
+
+    const changePriceType = (e) => {
         setPriceType(e.target.value)
     };
 
-    const getOrderList = () => (
-        <ul>
-            { orderList.map(({productName})=>{
-                return <li>+ {productName}</li>
-            })}
-        </ul>
+    const goToCheckout = () => {
+        console.log(orderList);
+        setCheckout(true)
+    };
 
-    );
+    const goToMenu = () => {
+        console.log(orderList);
+        setCheckout(false)
+    };
 
     const getItems = () => {
-        return products.map((product) => {
-            return <ItemCard title={product.product_name}
-                             price={priceType === PriceType.EURO ? product.price_euro : product.price_dollar}
-                             type={priceType}
-                             photo={product.photo}
-                             initialQuantity={product.quantity}
-                             id={product.id}
-                             addToCard={(id, product_name)=>addToCard(id, product_name)}
+        return orderStates.map(({id, quantity, photo, product_name, price}, index) => {
+            return <ItemCard type={priceType}
+                             index={index}
+                             quantity={quantity}
+                             photo={photo}
+                             price={price}
+                             product_name={product_name}
+                             id={id}
             />
         })
-    }
-    ;
+    };
+
+    const menuComponent = () => (
+        <div style={{
+            padding: '0 30px',
+            minHeight: 180,
+            display: "flex",
+            flexFlow: "row wrap",
+            maxWidth: "85%"
+        }}>
+            {getItems()}
+        </div>
+    );
 
     return (
-        <Layout style={{background:'white'}}>
-            <CustomHeader/>
-            <Content style={{padding: '0 50px'}}>
-                <Layout className="site-layout-background">
-                    <Sider className="site-layout-background" width={200} style={{minHeight:"100vh"}}>
-                        <Menu
-                            mode="inline"
-                            defaultSelectedKeys={['1']}
-                            defaultOpenKeys={['sub1']}
-                            style={{height: '100%'}}
-                            onClick={({key})=>{
-                                if (key === "1")
-                                    setProductType(null);
-                                else if (key==="2")
-                                    setProductType(ProductType.PIZZA);
-                                else
-                                    setProductType(ProductType.DRINKS)
-                            }}
-                        >
-                            <Menu.Item key="1" >All Products</Menu.Item>
-                            <Menu.Item key="2">Pizza</Menu.Item>
-                            <Menu.Item key="3">Drinks</Menu.Item>
-                        </Menu>
-                    </Sider>
-                    <div style={{display:"flex"}}>
-                    <Row>
-                        <Col>
-                            <Radio.Group value={priceType} onChange={changePriceType}>
-                                <Radio.Button value={PriceType.EURO}>EURO</Radio.Button>
-                                <Radio.Button value={PriceType.DOLLAR}>USD</Radio.Button>
-                            </Radio.Group>
-                        </Col>
-                    </Row>
-                    <Row>
-                    <Content style={{padding: '0 24px', minHeight: 180, display:"flex", flexFlow:"row wrap"}}>
-                        <Row>
-                        <Col span={20}
-                            style={{padding: '0 24px', minHeight: 180, display:"flex", flexFlow:"row wrap"}}>
-                            {getItems()}
-                        </Col>
-                        <Col>
-                            {getOrderList()}
-                        </Col>
-                        </Row>
+        <ProductContext.Provider value={products}>
+            <OrderListContext.Provider
+                value={{
+                    orders: orderStates,
+                    addToCard: addToCard,
+                    removeFromCard: removeFromCard
+                }}>
+                <Layout style={{background: 'white'}}>
+                    <CustomHeader/>
+                    <Content style={{padding: '0 50px'}}>
+                        <Layout className="site-layout-background">
+                            <Sider className="site-layout-background" width={200} style={{minHeight: "100vh"}}>
+                                <Menu
+                                    mode="inline"
+                                    defaultSelectedKeys={['1']}
+                                    defaultOpenKeys={['sub1']}
+                                    onClick={({key}) => {
+                                        if (key === "1"){
+                                            setProductType(null);
+                                            setCheckout(false);
+                                        }
+                                    else if (key === "2"){
+                                            setProductType(ProductType.PIZZA);
+                                            setCheckout(false)
+                                        }else{
+                                            setProductType(ProductType.DRINKS);
+                                            setCheckout(false)
+                                        }
+                                    }}
+                                    style={{height: '100%'}}
+                                >
+                                    <Menu.Item key="1">All Products</Menu.Item>
+                                    <Menu.Item key="2">Pizza</Menu.Item>
+                                    <Menu.Item key="3">Drinks</Menu.Item>
+                                </Menu>
+                            </Sider>
+                            <div style={{display: "flex", flexDirection: "column", width:"100%"}}>
+                                <div style={{display:"flex", justifyContent:"space-between"}}>
+                                    <div>
+                                        <Col>
+                                            <Radio.Group value={priceType} onChange={changePriceType}>
+                                                <Radio.Button
+                                                    style={{width:100, height:35, textAlign:"center", margin:"16px 24px"}}
+                                                    value={PriceType.EURO}>EURO</Radio.Button>
+                                                <Radio.Button
+                                                    style={{width:100, height:35, textAlign:"center", margin:"16px 24px"}}
+                                                    value={PriceType.DOLLAR}>USD</Radio.Button>
+                                            </Radio.Group>
+                                        </Col>
+                                    </div>
+                                    <div>
+                                        {
+                                        !checkout ? <Button style={{width:100, height:35, textAlign:"center", margin:"16px 24px"}} disabled={orderList.length === 0}
+                                            onClick={()=>goToCheckout()}>Order</Button>
+                                            :
+                                            <Button style={{width:150, height:35, textAlign:"center", margin:"16px 24px"}} disabled={orderList.length === 0}
+                                                    onClick={()=>goToMenu()}>Back To Menu</Button>
+                                        }
+                                    </div>
+                                </div>
+                                <div>
+                                    {!checkout ? menuComponent() : null}
+                                </div>
+                            </div>
+                        </Layout>
                     </Content>
-                    </Row>
-                    </div>
+                    <CustomFooter/>
                 </Layout>
-            </Content>
-            <CustomFooter/>
-        </Layout>
+            </OrderListContext.Provider>
+        </ProductContext.Provider>
     );
 };
 

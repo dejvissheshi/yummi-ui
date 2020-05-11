@@ -12,7 +12,7 @@ export const ProductType = {
 
 const getProductsForMenu = (product_type = null, price_type = null) => {
     if (price_type && product_type) {
-        return httpClient.get(`/products?product_type=${product_type}&&?price_type=${price_type}`);
+        return httpClient.get(`/products?product_type=${product_type}&&price_type=${price_type}`);
     } else if (product_type) {
         return httpClient.get(`/products?product_type=${product_type}`);
     }else if(price_type){

@@ -1,51 +1,48 @@
-import React, {useState} from "react";
-import {Button, Card, Input} from 'antd';
+import React, {useContext} from "react";
+import {Button, Input} from 'antd';
 import {PriceType} from "../../server/menu/getProductsForMenu";
-import {store} from "../../server/commons/localStorage";
-const { Meta } = Card;
+import ProductContext, {OrderListContext} from "../menuContext";
 
 
-const ItemCard = ({id, title, price, photo, type, initialQuantity, addToCard}) => {
-    const [quantity, setQuantity] = useState(initialQuantity);
+const ItemCard = ({index, id, photo, product_name, price, quantity, type}) => {
+    const contextProduct = useContext(ProductContext);
+    const {orders, addToCard, removeFromCard} = useContext(OrderListContext);
 
-    const removeFromCard = (id) => {
-        debugger;
-        let productQuantity = store.get(id);
-        if(productQuantity > 0){
-            productQuantity--;
-            store.set(id,productQuantity);
-        }
+    const displayContext = () => {
+        console.log(index);
     };
 
     return (
-        <div style={{width: 240, height: 140, margin: "20px"}}>
-            <Card
-                hoverable
-                cover={<img style={{width: 200, paddingLeft: "30px"}} alt="example" src={photo}/>}
-            >
-                {
-                    type === PriceType.EURO ?
-                        <Meta title={title} description={`Price: € ${price}`}/>
-                        :
-                        <Meta title={title} description={`Price: ${price} $`}/>
-                }
-
-            </Card>
-            <div style={{display:"flex"}}>
-                <Button type="primary" size="large" disabled={initialQuantity === 0}>
+        <div style={{maxWidth:200, minHeight:300, margin:"16px 24px"}}>
+            <div>
+                <img style={{width: 200}} src={photo} alt=""/>
+            </div>
+            <div style={{textAlign:"center"}}>
+                <h4 style={{marginTop:10}}>{product_name}</h4>
+                <p>{
+                    type === PriceType.EURO ? `Price: ${price} €`
+                        : `Price: $ ${price}`
+                }</p>
+            </div>
+            <div style={{display: "flex"}}>
+                <Button
+                    style={{width:"40%", textAlign:"center", padding:"0 10px"}}
+                    type="primary" size="large" disabled={quantity === 0}
+                        onClick={()=>removeFromCard(id)}
+                >
                     Remove
                 </Button>
-                <Input type="text" value={initialQuantity} disabled/>
-                <Button type="primary" size="large"
-                        onClick={()=>{
-                            addToCard(id, title);
-                            setQuantity(initialQuantity++)
+                <Input style={{width:"20%", textAlign:"center"}} type="text" value={quantity} disabled/>
+                <Button style={{width:"40%", textAlign:"center", padding:"0 10px"}}
+                        type="primary" size="large"
+                        onClick={() => {
+                            addToCard(id);
+                            displayContext()
                         }}
                 >
                     Add
                 </Button>
             </div>
-
         </div>
     )
 };
