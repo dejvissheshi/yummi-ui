@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from "react";
-import {Button, Col, Layout, Menu, notification, Radio} from 'antd';
+import {Button, Col, Layout, Menu, notification, Radio, Skeleton} from 'antd';
 import CustomFooter from "../common/custom/CustomFooter";
 import CustomHeader from "../common/custom/CustomHeader";
 import ItemCard from "./itemCard/ItemCard";
@@ -7,34 +7,9 @@ import getProductsForMenu, {PriceType, ProductType} from "../server/menu/getProd
 import {queryRequest} from "../server/commons/requestUtils";
 import ProductContext, {OrderListContext} from "./menuContext";
 import CarOutlined from "@ant-design/icons/lib/icons/CarOutlined";
+import getCheckoutInformation from "../server/menu/getCheckoutInformation";
 const {Content, Sider}=Layout;
 export const MENU_PATH = "/menu";
-
-const MockDataForCard = [
-    {"id":14,
-        "product_name":"Capricciosa",
-        "product_type":"pizza",
-        "price":4,
-        "description":null,
-        "quantity": 4,
-        "photo":"https:\/\/firebasestorage.googleapis.com\/v0\/b\/the-yummi-pizza-d5905.appspot.com\/o\/capricciosa-pizza.jpg?alt=media&token=216df53f-f6ce-4593-9a56-881c535e895c"
-    },
-    {"id":15,
-        "product_name":"Chicken & Mushroom",
-        "product_type":"pizza",
-        "price":4,
-        "quantity": 4,
-        "description":null,
-        "photo":"https:\/\/firebasestorage.googleapis.com\/v0\/b\/the-yummi-pizza-d5905.appspot.com\/o\/capricciosa-pizza.jpg?alt=media&token=216df53f-f6ce-4593-9a56-881c535e895c"},
-    {
-        "id":16,
-        "product_name":"Diavola",
-        "product_type":"pizza",
-        "price_euro":4,
-        "quantity": 3,
-        "description":null,
-        "photo":"https:\/\/firebasestorage.googleapis.com\/v0\/b\/the-yummi-pizza-d5905.appspot.com\/o\/capricciosa-pizza.jpg?alt=media&token=216df53f-f6ce-4593-9a56-881c535e895c"
-}];
 
 const GeneralMenu = () => {
     const [products, setProducts] = useState([]);
@@ -44,10 +19,12 @@ const GeneralMenu = () => {
     const [orderList, setOrderList] = useState([]);
     const [checkout, setCheckout] = useState(false);
     const [checkoutData, setCheckoutData] = useState({
+        products:[],
         total: 0,
-        transport:0,
-        products: MockDataForCard
+        subtotal: 0,
+        transport: 0
     });
+    const [checkoutLoading, setCheckoutLoading] = useState(true);
 
     const fetchData = async () => {
         const result = await queryRequest(() => getProductsForMenu(productType, priceType));
@@ -72,6 +49,32 @@ const GeneralMenu = () => {
     useEffect(() => {
         fetchData();
     }, [priceType, productType]);
+
+    const fetchCheckoutData = async () => {
+        debugger;
+        let data = {
+            products: orderList,
+            price_type: priceType
+        };
+        let result = await queryRequest(() => getCheckoutInformation(data));
+        if (result) {
+            let data = result.data;
+            setCheckoutData(data);
+        } else {
+            notification.open({
+                type: "error",
+                message: "There was an error processing checkout!"
+            });
+        }
+        setCheckoutLoading(false);
+    };
+
+    useEffect(()=>{
+        if (checkout) {
+            setCheckoutLoading(true);
+            fetchCheckoutData();
+        }
+    },[checkout, priceType]);
 
     const addToCard = (prodId) => {
         let newData = orderStates.map(({id, quantity, photo, product_name, price}) => {
@@ -129,13 +132,11 @@ const GeneralMenu = () => {
         setPriceType(e.target.value)
     };
 
-    const goToCheckout = () => {
-        console.log(orderList);
+    const goToCheckout = async () => {
         setCheckout(true)
     };
 
     const goToMenu = () => {
-        console.log(orderList);
         setCheckout(false)
     };
 
@@ -165,21 +166,28 @@ const GeneralMenu = () => {
     );
 
     const listProductInCheckout = () => {
-        let data = [];
-        data = checkoutData.products;
+        let data = checkoutData.products;
         return (
             <div>
                 {
-                    data.map(({photo, product_name, quantity})=>{
-                        return <div style={{display:"flex", margin:"16px 24px", background:"white", borderRadius:5, paddingLeft:15}}>
+                    data.map(({photo, product_name, quantity, price}, index) => {
+                        console.log(price);
+                        return <div key={index} style={{
+                            display: "flex",
+                            margin: "16px 24px",
+                            background: "white",
+                            borderRadius: 5,
+                            paddingLeft: 15
+                        }}>
                             <div>
-                                <img style={{width:100, borderRadius:5}} src={photo} alt=""/>
+                                <img style={{width: 100, borderRadius: 5}} src={photo} alt=""/>
                             </div>
-                            <div style={{margin:"30px 16px", fontSize:"20px"}}>
+                            <div style={{margin: "30px 16px", fontSize: "20px"}}>
                                 <h4>{product_name}</h4>
                             </div>
-                            <div style={{margin:"30px 16px", fontSize:"20px"}}>
-                              <h4>x {quantity}</h4>
+                            <div style={{margin: "30px 16px", fontSize: "20px"}}>
+                                <h4><span style={{marginRight:20}}>{priceType === PriceType.EURO ? `Price per unit: ${price.toPrecision(3)} €`
+                                    : `Price per unit: $ ${price.toPrecision(3)}`}</span> x {quantity}</h4>
                             </div>
                         </div>
                     })
@@ -189,6 +197,7 @@ const GeneralMenu = () => {
     };
 
     const cartComponent = () => (
+        <Skeleton active loading={checkoutLoading}>
         <div style={{margin:"16px 24px", width:"50%", borderRight:"1px solid #505050"}}>
             <div>
                 <div>
@@ -197,16 +206,17 @@ const GeneralMenu = () => {
             </div>
             <div style={{display:"flex"}}>
                 <h4 style={{margin:"16px 48px", fontSize:20}}>
-                    {priceType === PriceType.EURO ? `Transport Cost: ${checkoutData.transport} €`
-                        : `Transport Cost: $ ${checkoutData.transport}`}
+                    {priceType === PriceType.EURO ? `Transport Cost: ${checkoutData.transport.toPrecision(3)} €`
+                        : `Transport Cost: $ ${checkoutData.transport.toPrecision(3)}`}
                 </h4>
                 <CarOutlined style={{fontSize:30, marginTop:"1%"}} />
             </div>
             <h3 style={{margin:"16px 48px", fontSize:24}}>
-                {priceType === PriceType.EURO ? `Total: ${checkoutData.total} €`
-                    : `Total: $ ${checkoutData.total}`}
+                {priceType === PriceType.EURO ? `Total: ${checkoutData.total.toPrecision(3)} €`
+                    : `Total: $ ${checkoutData.total.toPrecision(3)}`}
             </h3>
         </div>
+        </Skeleton>
     );
 
     return (
