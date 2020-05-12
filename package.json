@@ -28,6 +28,7 @@
   "eslintConfig": {
     "extends": "react-app"
   },
+  "proxy": "https://yummi-service.herokuapp.com",
   "browserslist": {
     "production": [
       ">0.2%",
