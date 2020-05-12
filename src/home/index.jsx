@@ -5,7 +5,7 @@ import 'antd/dist/antd.css';
 import CustomFooter from "../common/custom/CustomFooter";
 import CustomHeader from "../common/custom/CustomHeader";
 
-import LandingBackground from "/Users/crs/WebstormProjects/yummi-ui/src/assets/images/fresh-pizza-vector.jpg"
+import LandingBackground from "../assets/images/fresh-pizza-vector.jpg"
 import CardDescription from "./common/CardDescription";
 
 export const HOME_PAGE_PATH = "/home";
